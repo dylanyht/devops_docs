@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: yapi-mongo
+spec:
+  selector:
+    matchLabels:
+      app: yapi-mongo
+  serviceName: "yapi-mongo"
+  replicas: 1
+  volumeClaimTemplates:
+  - metadata:
+      name: yapi-mongo
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "yapi-mongo"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  template:
+    metadata:
+      labels:
+        app: yapi-mongo
+    spec:
+      terminationGracePeriodSeconds: 10
+      nodeName: k8s-77-83
+      containers:
+      - name: yapi-mongo
+        image: mongo
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 27017
+          name: yapi-mongo
+        - containerPort: 80
+          name: base
+        volumeMounts:
+        - mountPath: /data/db
+          name: yapi-mongo
+#      volumes:
+#      - name: mongo
+#        hostPath:
+#          path: /home/docker/yapi-data/mongo
+        

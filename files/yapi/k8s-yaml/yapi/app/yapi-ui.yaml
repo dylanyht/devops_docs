@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: yapi-ui
+  labels:
+    app: yapi
+spec:
+  ports:
+  - port: 9090
+    name: yapi
+    targetPort: yapi
+    nodePort: 30512
+  - port: 3000
+    name: yapi-web
+    targetPort: yapi-web
+    nodePort: 30513
+  selector:
+    app: yapi
+  type: NodePort

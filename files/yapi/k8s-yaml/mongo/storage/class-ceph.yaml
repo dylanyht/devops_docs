@@ -1,0 +1,11 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: yapi-mongo
+provisioner: ceph.com/cephfs
+parameters:
+    monitors: 172.16.77.81:6789
+    adminId: admin
+    adminSecretName: ceph-secret-admin
+    adminSecretNamespace: "storage"
+    claimRoot: /volumes/kubernetes/default/yapi-mongo

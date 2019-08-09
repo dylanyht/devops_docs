@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter-ui
+spec:
+  ports:
+  - port: 8888
+    name: jupyter
+    targetPort: jupyter
+    nodePort: 31888
+  selector:
+    app: jupyter
+  type: NodePort

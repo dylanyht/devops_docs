@@ -1,0 +1,23 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: jupyter-data
+provisioner: ceph.com/cephfs
+parameters:
+    monitors: 172.16.77.53:6789
+    adminId: admin
+    adminSecretName: ceph-secret-admin
+    adminSecretNamespace: "storage"
+    claimRoot: /volumes/kubernetes/default/jupyter-data
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: jupyter-pkg
+provisioner: ceph.com/cephfs
+parameters:
+    monitors: 172.16.77.53:6789
+    adminId: admin
+    adminSecretName: ceph-secret-admin
+    adminSecretNamespace: "storage"
+    claimRoot: /volumes/kubernetes/default/jupyter-pkg

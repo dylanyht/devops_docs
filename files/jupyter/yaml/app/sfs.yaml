@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: jupyter
+spec:
+  selector:
+    matchLabels:
+      app: jupyter
+  serviceName: "jupyter"
+  replicas: 1
+  volumeClaimTemplates:
+  - metadata:
+      name: jupyter-data
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "jupyter-data"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  - metadata:
+      name: jupyter-pkg
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "jupyter-pkg"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  template:
+    metadata:
+      labels:
+        app: jupyter
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: jupyter
+        image: jupyter/base-notebook:latest
+        command: [ "/bin/bash", "-ce", "tail -f /dev/null" ]
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8888
+          name: jupyter
+        volumeMounts:
+        - mountPath: /etc/localtime
+          name: time
+        - mountPath: /opt/conda/pkgs
+          name: jupyter-pkg
+        - mountPath: /home/jovyan
+          name: jupyter-data
+      volumes:
+      - name: time
+        hostPath:
+          path: /etc/localtime

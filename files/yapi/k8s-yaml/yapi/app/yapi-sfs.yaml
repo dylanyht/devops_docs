@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: yapi
+spec:
+  selector:
+    matchLabels:
+      app: yapi
+  serviceName: "yapi"
+  replicas: 1
+  volumeClaimTemplates:
+  - metadata:
+      name: yapi-data
+      annotations:
+        volume.beta.kubernetes.io/storage-class: "yapi-data"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+  template:
+    metadata:
+      labels:
+        app: yapi
+    spec:
+      terminationGracePeriodSeconds: 10
+      nodeName: k8s-77-83
+      containers:
+      - name: yapi
+        image: 172.16.77.53:30882/yapi:0.0.2
+        command: [ "/bin/bash", "-ce", "tail -f /dev/null" ]
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9090
+          name: yapi
+        - containerPort: 3000
+          name: yapi-web
+        - containerPort: 80
+          name: base
+        volumeMounts:
+        - mountPath: /my-yapi
+          name: yapi-data
+#      volumes:
+#      - name: yapi-data
+#        hostPath:
+#          path: /home/docker/yapi-data/yapi
