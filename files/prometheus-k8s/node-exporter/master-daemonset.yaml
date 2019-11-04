@@ -1,0 +1,41 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata: 
+  name: node-exporter 
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels: 
+      app: node-exporter
+  template:
+    metadata:
+      name: node-exporter
+      labels: 
+        app: node-exporter
+      annotations: 
+        prometheus.io/scrape: 'true' # 能被集群内 Prometheus 获取指标的关键表示符
+        prometheus.io/port: '9100'
+        prometheus.io/path: '/metrics'
+    spec:
+      tolerations: # 因 Master 节点具有 Taints（污点）属性，这里要设置 Tolerations（容忍）使得 Master 节点运行 node_exporter
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      volumes:
+      - name: proc
+        hostPath: {path: /proc}
+      - name: sys
+        hostPath: {path: /sys}
+      containers:
+      - name: node-exporter
+        image: quay.io/prometheus/node-exporter:v0.15.2 # 因最新版 0.16 某些指标值有所改变，为了配合后面的 Grafana Dashboard，这边选用 0.15.2
+        args: [--path.procfs=/proc_host, --path.sysfs=/host_sys]
+        ports:
+        - {name: node-exporter, hostPort: 9100, containerPort: 9100}
+        volumeMounts:
+        - {name: sys, readOnly: true, mountPath: /host_sys}
+        - {name: proc, readOnly: true, mountPath: /proc_host}
+        imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      hostNetwork: true
+      hostPID: true
