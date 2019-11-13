@@ -63,11 +63,16 @@ rules:
 ```shell
 # jar包方式启动
 java -javaagent:/usr/local/jmx/jmx_prometheus_javaagent-0.12.0.jar=38081:/usr/local/jmx/tomcat.yml -jar yourJar.jar
-# tomcat启动 需要配置catalina.sh 
-#我们是用catalina.sh来启动tomcat的  如果你的是用其他的脚本启动tomcat 那就配置对应的脚本
+# tomcat启动 需要配置catalina.sh 我们是用catalina.sh来启动tomcat的  
 vim  your-tomcat/bin/catalina.sh
   #加入以下内容
 JAVA_OPTS="-javaagent:/usr/local/jmx/jmx_prometheus_javaagent-0.12.0.jar=38081:/usr/local/jmx/tomcat.yml"
+
+#如果你是使用startup.sh来启动tomcat 可以配置setenv.sh文件
+#注意setenv.sh和catalina.sh 二选一配置  不要配置重复了
+cat > your-tomcat/bin/setenv.sh << EOF
+JAVA_OPTS="-javaagent:/usr/local/jmx/jmx_prometheus_javaagent-0.12.0.jar=38081:/usr/local/jmx/tomcat.yml"
+EOF
 
 #配置好 重启tomcat
 web访问http://<your-ip>:38081 即可看到监控的指标
