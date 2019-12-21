@@ -1,0 +1,104 @@
+stages:
+- package
+- test
+- release
+- deploy
+#raptor打包
+package-raptor:
+  image: 172.16.77.53:30882/maven:0.0.2
+  stage: package
+  only:
+#    refs:
+#    - tags
+    variables:
+    - $PROJECT == "raptor"
+  script:
+  - echo "<<<<<package-raptor>>>>>"
+  - mvn org.apache.maven.plugins:maven-dependency-plugin:2.1:get -DrepoUrl=http://172.16.77.52:30881/repository/kutesmart-bl/   -Dartifact=com.kutesmart.bl:cnbl-trex-bean:0.0.7-SNAPSHOT
+  - mvn org.apache.maven.plugins:maven-dependency-plugin:2.1:get -DrepoUrl=http://172.16.77.52:30881/repository/kutesmart-bl/   -Dartifact=com.kutesmart.bl:cnbl-trex-widget:0.0.1-SNAPSHOT
+  - mvn clean install -Dmaven.test.skip=true -Pprod
+  artifacts:
+    paths:
+    - target/cnbl.raptor-0.0.1-SNAPSHOT.war
+#raptor生成镜像
+release-raptor:
+  image: docker:stable-dind
+  stage: release
+  dependencies:
+  - package-raptor
+  only:
+    variables:
+    - $PROJECT == "raptor"
+  script:
+  - echo "<<<<<release-raptor>>>>>"
+  - cp target/cnbl.raptor-0.0.1-SNAPSHOT.war   .devops/raptor/prod
+  - cd .devops/raptor/prod
+  - mv cnbl.raptor-0.0.1-SNAPSHOT.war ROOT.war
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - docker build -t 172.16.77.53:30882/bl-raptor:$CI_PIPELINE_ID .
+  - docker push 172.16.77.53:30882/bl-raptor:$CI_PIPELINE_ID
+#raptor部署
+deploy-raptor:
+  image: 172.16.77.53:30882/k8s:0.0.4
+  stage: deploy
+  only:
+    variables:
+    - $PROJECT == "raptor"
+  script:
+  - echo "<<<<<deploy-raptor>>>>>"
+  - cd .devops/raptor/prod
+  - sed -i "s/_VERSION_/${CI_PIPELINE_ID}/"  ./yaml/raptor-deployment.yaml
+  - kubectl apply -f ./yaml/
+  - kubectl delete -f ./yaml/
+  - kubectl apply -f ./yaml/
+
+
+
+  #raptor-151打包
+package-raptor-151:
+  image: 172.16.77.53:30882/maven:0.0.2
+  stage: package
+  only:
+#    refs:
+#    - tags
+    variables:
+    - $PROJECT == "jdk-151"
+  script:
+  - echo "<<<<<package-raptor>>>>>"
+  - mvn org.apache.maven.plugins:maven-dependency-plugin:2.1:get -DrepoUrl=http://172.16.77.52:30881/repository/kutesmart-bl/   -Dartifact=com.kutesmart.bl:cnbl-trex-bean:0.0.7-SNAPSHOT
+  - mvn org.apache.maven.plugins:maven-dependency-plugin:2.1:get -DrepoUrl=http://172.16.77.52:30881/repository/kutesmart-bl/   -Dartifact=com.kutesmart.bl:cnbl-trex-widget:0.0.1-SNAPSHOT
+  - mvn clean install -Dmaven.test.skip=true -Pprod
+  artifacts:
+    paths:
+    - target/cnbl.raptor-0.0.1-SNAPSHOT.war
+#raptor-151生成镜像
+release-raptor-151:
+  image: docker:stable-dind
+  stage: release
+  dependencies:
+  - package-raptor-151
+  only:
+    variables:
+    - $PROJECT == "jdk-151"
+  script:
+  - echo "<<<<<release-raptor>>>>>"
+  - cp target/cnbl.raptor-0.0.1-SNAPSHOT.war   .devops/raptor/test/
+  - cd .devops/raptor/test/
+  - mv cnbl.raptor-0.0.1-SNAPSHOT.war ROOT.war
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - docker build -t 172.16.77.53:30882/bl-raptor-jdk151:$CI_PIPELINE_ID .
+  - docker push 172.16.77.53:30882/bl-raptor-jdk151:$CI_PIPELINE_ID
+#raptor-151部署
+deploy-raptor-151:
+  image: 172.16.77.53:30882/k8s:0.0.4
+  stage: deploy
+  only:
+    variables:
+    - $PROJECT == "jdk-151"
+  script:
+  - echo "<<<<<deploy-raptor>>>>>"
+  - cd .devops/raptor/test
+  - sed -i "s/_VERSION_/${CI_PIPELINE_ID}/"  ./yaml/raptor-deployment.yaml
+  - kubectl apply -f ./yaml/ -n bl
+#  - kubectl apply -f ./yaml/ -n test
+

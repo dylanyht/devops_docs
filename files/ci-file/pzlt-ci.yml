@@ -1,0 +1,103 @@
+stages:
+- package
+- test
+- release
+- staging
+- deploy
+release-python-dev:
+  image: docker:stable-dind
+  stage: release
+  environment:
+    name: dev
+  script:
+  - env
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - tar -cvf python.tar.gz ./*
+  - mv python.tar.gz ./devops
+  - docker build -t 172.16.77.53:30882/photomeasure-dev:0.0.1 ./devops
+  - docker push 172.16.77.53:30882/photomeasure-dev:0.0.1
+  only:
+    - master
+    - merge_requests
+deploy-python-dev:
+  image: 172.16.77.53:30882/k8s:0.0.4
+  stage: deploy
+  environment:
+    name: dev
+  script:
+  - kubectl apply -f ./devops/yaml/dev/ -n dev
+  - kubectl delete -f ./devops/yaml/dev/ -n dev
+  - kubectl apply -f ./devops/yaml/dev/ -n dev
+  when: manual
+  only:
+    - master
+    - merge_requests
+
+
+release-python-test:
+  image: docker:stable-dind
+  stage: release
+  environment:
+    name: test
+  script:
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - tar -cvf python.tar.gz ./*
+  - mv python.tar.gz ./devops
+  - docker build -t 172.16.77.53:30882/photomeasure-dev:0.0.1 ./devops
+  - docker push 172.16.77.53:30882/photomeasure-dev:0.0.1
+  only:
+  - /^release.*$/
+deploy-python-test:
+  image: 172.16.77.53:30882/k8s:0.0.4
+  stage: deploy
+  environment:
+    name: test
+  script:
+  - kubectl apply -f ./devops/yaml/test/ -n test
+  - kubectl delete -f ./devops/yaml/test/ -n test
+  - kubectl apply -f ./devops/yaml/test/ -n test
+  only:
+  - /^release.*$/
+
+
+release-python-prod:
+  image: docker:stable-dind
+  stage: release
+  environment:
+    name: prod
+  script:
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - tar -cvf python.tar.gz ./*
+  - mv python.tar.gz ./devops
+  - docker build -t 172.16.77.53:30882/photomeasure-dev:${CI_COMMIT_TAG} ./devops
+  - docker push 172.16.77.53:30882/photomeasure-dev:${CI_COMMIT_TAG}
+  only:
+  - tags
+
+staging-python-prod:
+  image: 172.16.77.53:30882/k8s:0.0.4
+  stage: staging
+  environment:
+    name: prod
+  script:
+  - sed -i "s/_VERSION_/${CI_COMMIT_TAG}/"  ./devops/yaml/staging/photomeasure-dpm.yaml
+  - kubectl apply -f ./devops/yaml/staging/ -n staging
+  - kubectl delete -f ./devops/yaml/staging/ -n staging
+  - kubectl apply -f ./devops/yaml/staging/ -n staging
+  only:
+  - tags  
+
+deploy-python-prod:
+  image: 172.16.77.53:30882/k8s:0.0.4
+  stage: deploy
+  environment:
+    name: prod
+  script:
+  - sed -i "s/_VERSION_/${CI_COMMIT_TAG}/"  ./devops/yaml/prod/photomeasure-dpm.yaml
+  - kubectl apply -f ./devops/yaml/prod/ -n prod
+  - kubectl delete -f ./devops/yaml/prod/ -n prod
+  - kubectl apply -f ./devops/yaml/prod/ -n prod
+  when: manual
+  only:
+  - tags
+

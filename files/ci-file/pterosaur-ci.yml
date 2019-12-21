@@ -1,0 +1,640 @@
+stages:
+- package
+- test
+- release
+- deploy
+- copy
+.common-package: &common-package
+  image: 172.16.77.53:30882/maven:new-aliyun
+  stage: package
+  script:
+  - echo "<<<<<package-cnbl-$PROJECT>>>>>"
+  - mvn clean package -Dmaven.test.skip=true
+  artifacts:
+    paths:
+    - cnbl-provider/cnbl-$PROJECT-provider/target/cnbl-$PROJECT-provider-1.0.0-SNAPSHOT.jar
+.common-release: &common-release
+  image: docker:stable-dind
+  stage: release
+.common-deploy-dev: &common-deploy-dev
+  image: 172.16.77.53:30882/k8s:0.0.8
+  stage: deploy
+  script:
+  - echo "<<<<<deploy-cnbl-$PROJECT>>>>>"
+  - cd cnbl-k8s/$PROJECT/yaml
+  #- sed -i 's/3140/3040/' app/$PROJECT-ui.yaml
+  - kubectl apply -f ./app/dev -n dev
+  - kubectl delete -f ./app/dev -n dev
+  - kubectl apply -f ./app/dev -n dev
+.common-deploy-test: &common-deploy-test
+  image: 172.16.77.53:30882/k8s:0.0.8
+  stage: deploy
+  script:
+  - echo "<<<<<deploy-cnbl-$PROJECT>>>>>"
+  - cd cnbl-k8s/$PROJECT/yaml
+  - kubectl apply -f ./app/test -n test
+  - kubectl delete -f ./app/test -n test
+  - kubectl apply -f ./app/test -n test
+.common-deploy-prod: &common-deploy-prod
+  image: 172.16.77.53:30882/k8s:0.0.10
+  stage: deploy
+  script:
+  - echo "<<<<<deploy-cnbl-$PROJECT>>>>>"
+  - cd cnbl-k8s/$PROJECT/yaml
+  - kubectl apply -f ./app/prod -n imds
+  - kubectl delete -f ./app/prod -n imds 
+  - kubectl apply -f ./app/prod -n imds
+.common-release-dev: &common-release-dev
+  script:
+  - echo "<<<<<release-cnbl-$PROJECT>>>>>"
+  - cp cnbl-provider/cnbl-$PROJECT-provider/target/cnbl-$PROJECT-provider-1.0.0-SNAPSHOT.jar cnbl-k8s/$PROJECT
+  - cd cnbl-k8s/$PROJECT
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - docker build -t 172.16.77.53:30882/cnbl-$PROJECT:0.0.1 .
+  - docker push 172.16.77.53:30882/cnbl-$PROJECT:0.0.1
+.common-release-test: &common-release-test
+  script:
+  - echo "<<<<<release-cnbl-$PROJECT>>>>>"
+  - cp cnbl-provider/cnbl-$PROJECT-provider/target/cnbl-$PROJECT-provider-1.0.0-SNAPSHOT.jar cnbl-k8s/$PROJECT
+  - mv cnbl-k8s/$PROJECT/bin/docker-entrypoint-test.sh cnbl-k8s/$PROJECT/bin/docker-entrypoint.sh
+  - sed -i "s/0.0.1/0.0.4/" cnbl-k8s/$PROJECT/Dockerfile
+  - cd cnbl-k8s/$PROJECT
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - docker build -t 172.16.77.53:30882/cnbl-$PROJECT:0.0.1 .
+  - docker push 172.16.77.53:30882/cnbl-$PROJECT:0.0.1
+.common-release-prod: &common-release-prod
+  script:
+  - echo "<<<<<release-cnbl-$PROJECT>>>>>"
+  - cp cnbl-provider/cnbl-$PROJECT-provider/target/cnbl-$PROJECT-provider-1.0.0-SNAPSHOT.jar cnbl-k8s/$PROJECT
+  - mv cnbl-k8s/$PROJECT/bin/docker-entrypoint-prod.sh cnbl-k8s/$PROJECT/bin/docker-entrypoint.sh
+  - cd cnbl-k8s/$PROJECT
+  - docker login --username=kutesmartsa  -p 1qaz@WSX  registry.cn-beijing.aliyuncs.com
+  - docker build -t registry.cn-beijing.aliyuncs.com/cotte-springcloud/imds-$PROJECT:0.0.2 .
+  - docker push registry.cn-beijing.aliyuncs.com/cotte-springcloud/imds-$PROJECT:0.0.2
+  #- docker login --username=cooper.zhang@kutesmart.com -p 1qaz@WSX registry.cn-beijing.aliyuncs.com
+  #- docker build -t registry.cn-beijing.aliyuncs.com/kute-springcloud/imds-$PROJECT:0.0.2 .
+  #- docker push registry.cn-beijing.aliyuncs.com/kute-springcloud/imds-$PROJECT:0.0.2
+#---------------------dev环境-------------------------
+# metadata模块
+#metadata打包
+package-metadata-dev:
+  <<: *common-package
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "metadata"
+#metadata生成镜像
+release-metadata-dev:
+  <<: *common-release
+  dependencies:
+  - package-metadata-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "metadata"
+  <<: *common-release-dev
+#metadata部署
+deploy-metadata-dev:
+  <<: *common-deploy-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "metadata"
+#archive模块
+#archive打包
+package-archive-dev:
+  <<: *common-package
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "archive"
+#archive生成镜像
+release-archive-dev:
+  <<: *common-release
+  dependencies:
+  - package-archive-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "archive"
+  <<: *common-release-dev
+#archive部署
+deploy-archive-dev:
+  <<: *common-deploy-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "archive"
+#match模块
+#match打包
+package-match-dev:
+  <<: *common-package
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "match"
+#match生成镜像
+release-match-dev:
+  <<: *common-release
+  dependencies:
+  - package-match-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "match"
+  <<: *common-release-dev
+#match部署
+deploy-match-dev:
+  <<: *common-deploy-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "match"
+#order模块
+#order打包
+package-order-dev:
+  <<: *common-package
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "order"
+#order生成镜像
+release-order-dev:
+  <<: *common-release
+  dependencies:
+  - package-order-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "order"
+  <<: *common-release-dev
+#order部署
+deploy-order-dev:
+  <<: *common-deploy-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "order"
+#api模块
+#api打包
+package-api-dev:
+  <<: *common-package
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "api"
+#order生成镜像
+release-api-dev:
+  <<: *common-release
+  dependencies:
+  - package-api-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "api"
+  <<: *common-release-dev
+#order部署
+deploy-api-dev:
+  <<: *common-deploy-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "api"
+#web打包
+package-web-dev:
+  image: 172.16.77.53:30882/maven:0.0.1
+  stage: package
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "web"
+  script:
+  - echo "<<<<<package-cnbl-web>>>>>"
+  - cd cnbl-web
+  - mvn clean package -Dmaven.test.skip=true
+  artifacts:
+    paths:
+    - cnbl-web/target/cnbl-web-1.0.0-SNAPSHOT.jar
+#web生成镜像
+release-web-dev:
+  <<: *common-release
+  dependencies:
+  - package-web-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "web"
+  script:
+  - echo "<<<<<release-cnbl-web>>>>>"
+  - cp cnbl-web/target/cnbl-web-1.0.0-SNAPSHOT.jar cnbl-k8s/web
+  - cd cnbl-k8s/web
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - docker build -t 172.16.77.53:30882/cnbl-web:0.0.1 .
+  - docker push 172.16.77.53:30882/cnbl-web:0.0.1
+#web部署
+deploy-web-dev:
+  <<: *common-deploy-dev
+  only:
+    refs:
+    - master
+    variables:
+    - $PROJECT == "web"
+  script:
+  - echo "<<<<<deploy-cnbl-web>>>>>"
+  - cd cnbl-k8s/web/yaml
+  - kubectl apply -f ./app/dev -n dev
+  - kubectl delete -f ./app/dev -n dev
+  - kubectl apply -f ./app/dev -n dev
+#---------------------test环境-------------------------
+# metadata模块
+package-metadata-test:
+  <<: *common-package
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "metadata"
+#metadata生成镜像
+release-metadata-test:
+  <<: *common-release
+  dependencies:
+  - package-metadata-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "metadata"
+  <<: *common-release-test
+#metadata部署
+deploy-metadata-test:
+  <<: *common-deploy-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "metadata"
+#archive模块
+#archive打包
+package-archive-test:
+  <<: *common-package
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "archive"
+#archive生成镜像
+release-archive-test:
+  <<: *common-release
+  dependencies:
+  - package-archive-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "archive"
+  <<: *common-release-test
+#archive部署
+deploy-archive-test:
+  <<: *common-deploy-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "archive"
+#match模块
+#match打包
+package-match-test:
+  <<: *common-package
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "match"
+#match生成镜像
+release-match-test:
+  <<: *common-release
+  dependencies:
+  - package-match-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "match"
+  <<: *common-release-test
+#match部署
+deploy-match-test:
+  <<: *common-deploy-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "match"
+#order模块
+#order打包
+package-order-test:
+  <<: *common-package
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "order"
+#order生成镜像
+release-order-test:
+  <<: *common-release
+  dependencies:
+  - package-order-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "order"
+  <<: *common-release-test
+#order部署
+deploy-order-test:
+  <<: *common-deploy-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "order"
+#api模块
+#api打包
+package-api-test:
+  <<: *common-package
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "api"
+#api生成镜像
+release-api-test:
+  <<: *common-release
+  dependencies:
+  - package-api-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "api"
+  <<: *common-release-test
+#api部署
+deploy-api-test:
+  <<: *common-deploy-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "api"
+#web打包
+package-web-test:
+  image: 172.16.77.53:30882/maven:0.0.1
+  stage: package
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "web"
+  script:
+  - echo "<<<<<package-cnbl-web>>>>>"
+  - cd cnbl-web
+  - mv src/main/resources/static/main_test.js src/main/resources/static/main.js
+  - mvn clean package -Dmaven.test.skip=true
+  artifacts:
+    paths:
+    - cnbl-web/target/cnbl-web-1.0.0-SNAPSHOT.jar
+#web生成镜像
+release-web-test:
+  <<: *common-release
+  dependencies:
+  - package-web-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "web"
+  script:
+  - echo "<<<<<release-cnbl-web>>>>>"
+  - cp cnbl-web/target/cnbl-web-1.0.0-SNAPSHOT.jar cnbl-k8s/web
+  - cd cnbl-k8s/web
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - docker build -t 172.16.77.53:30882/cnbl-web:0.0.1 .
+  - docker push 172.16.77.53:30882/cnbl-web:0.0.1
+#web部署
+deploy-web-test:
+  <<: *common-deploy-test
+  only:
+    refs:
+    - /^release.*$/
+    variables:
+    - $PROJECT == "web"
+  script:
+  - echo "<<<<<deploy-cnbl-web>>>>>"
+  - cd cnbl-k8s/web/yaml
+  - kubectl apply -f ./app/test -n test
+  - kubectl delete -f ./app/test -n test
+  - kubectl apply -f ./app/test -n test
+#---------------------prod环境-------------------------
+# metadata模块
+package-metadata-prod:
+  <<: *common-package
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "metadata"
+#metadata生成镜像
+release-metadata-prod:
+  <<: *common-release
+  dependencies:
+  - package-metadata-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "metadata"
+  <<: *common-release-prod
+#metadata部署
+deploy-metadata-prod:
+  <<: *common-deploy-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "metadata"
+#archive模块
+#archive打包
+package-archive-prod:
+  <<: *common-package
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "archive"
+#archive生成镜像
+release-archive-prod:
+  <<: *common-release
+  dependencies:
+  - package-archive-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "archive"
+  <<: *common-release-prod
+#archive部署
+deploy-archive-prod:
+  <<: *common-deploy-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "archive"
+#match模块
+#match打包
+package-match-prod:
+  <<: *common-package
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "match"
+#match生成镜像
+release-match-prod:
+  <<: *common-release
+  dependencies:
+  - package-match-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "match"
+  <<: *common-release-prod
+#match部署
+deploy-match-prod:
+  <<: *common-deploy-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "match"
+#order模块
+#order打包
+package-order-prod:
+  <<: *common-package
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "order"
+#order生成镜像
+release-order-prod:
+  <<: *common-release
+  dependencies:
+  - package-order-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "order"
+  <<: *common-release-prod
+#order部署
+deploy-order-prod:
+  <<: *common-deploy-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "order"
+#api模块
+#api打包
+package-api-prod:
+  <<: *common-package
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "api"
+#api生成镜像
+release-api-prod:
+  <<: *common-release
+  dependencies:
+  - package-api-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "api"
+  <<: *common-release-prod
+#api部署
+deploy-api-prod:
+  <<: *common-deploy-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "api"
+#web打包
+package-web-prod:
+  image: 172.16.77.53:30882/maven:0.0.1
+  stage: package
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "web"
+  script:
+  - echo "<<<<<package-cnbl-web>>>>>"
+  - cd cnbl-web
+  - mv src/main/resources/static/main_pro.js src/main/resources/static/main.js
+  - mvn clean package -Dmaven.test.skip=true
+  artifacts:
+    paths:
+    - cnbl-web/target/cnbl-web-1.0.0-SNAPSHOT.jar
+#web生成镜像
+release-web-prod:
+  <<: *common-release
+  dependencies:
+  - package-web-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "web"
+  script:
+  - echo "<<<<<release-cnbl-web>>>>>"
+  - cp cnbl-web/target/cnbl-web-1.0.0-SNAPSHOT.jar cnbl-k8s/web
+  - cd cnbl-k8s/web
+  - docker login --username=cooper.zhang@kutesmart.com -p 1qaz@WSX registry.cn-beijing.aliyuncs.com
+  - docker build -t registry.cn-beijing.aliyuncs.com/kute-springcloud/imds-web:0.0.2 .
+  - docker push registry.cn-beijing.aliyuncs.com/kute-springcloud/imds-web:0.0.2
+#web部署
+deploy-web-prod:
+  <<: *common-deploy-prod
+  only:
+    refs:
+    - tags
+    variables:
+    - $PROJECT == "web"
+  script:
+  - echo "<<<<<deploy-cnbl-web>>>>>"
+  - cd cnbl-k8s/web/yaml
+  - kubectl apply -f ./app/prod -n imds
+  - kubectl delete -f ./app/prod -n imds
+  - kubectl apply -f ./app/prod -n imds

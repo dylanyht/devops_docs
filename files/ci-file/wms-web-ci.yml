@@ -1,0 +1,48 @@
+stages:
+- package
+- release
+- deploy
+#wms-web打包
+package-wms-web:
+  stage: package
+  only:
+    refs:
+    - tags
+#    variables:
+#    - $PROJECT == "wms-web"
+  script:
+  - echo "<<<<<package-wms-web>>>>>"
+  - tar -czf web.tar.gz ./*
+  artifacts:
+    paths:
+    - web.tar.gz
+#wms-web生成镜像
+release-wms-web:
+  image: docker:stable-dind
+  stage: release
+  only:
+    refs:
+    - tags
+#    variables:
+#    - $PROJECT == "wms-web"
+  script:
+  - echo "<<<<<release-wms-web>>>>>"
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD  $CI_REGISTRY
+  - docker build -t registry.cn-beijing.aliyuncs.com/kute-springcloud/wms-web:${CI_COMMIT_TAG} .
+  - docker push registry.cn-beijing.aliyuncs.com/kute-springcloud/wms-web:${CI_COMMIT_TAG}
+#wms-web部署
+deploy-wms-web:
+  image: 172.16.77.53:30882/k8s:0.0.10
+  stage: deploy
+  only:
+    refs:
+    - tags
+#    variables:
+#    - $PROJECT == "wms-web"
+  script:
+  - echo "<<<<<deploy-wms-web>>>>>"
+  - cd .devops/wms-web/
+  - sed -i "s/_VERSION_/${CI_COMMIT_TAG}/" ./yaml/wms-web-deployment.yaml
+  - kubectl apply -f ./yaml/ -n wms
+  - kubectl delete -f ./yaml/  -n wms
+  - kubectl apply -f ./yaml/  -n wms

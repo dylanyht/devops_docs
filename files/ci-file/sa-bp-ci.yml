@@ -1,0 +1,107 @@
+stages:
+- package
+- test
+- release
+- deploy
+#dgraph打包
+package-dgraph:
+  image: 172.16.77.53:30882/maven:0.0.2
+  stage: package
+  only:
+    variables:
+    - $PROJECT == "dgraph"
+  script:
+  - echo "<<<<<package-dgraph>>>>>"
+  - cd api/step-dgraph
+  - mvn clean install -Dmaven.test.skip=true
+  artifacts:
+    paths:
+    - api/step-dgraph/target/dgraph-0.0.1-SNAPSHOT.jar
+#dgraph生成镜像
+release-dgraph:
+  image: docker:stable-dind
+  stage: release
+  dependencies:
+  - package-dgraph
+  only:
+    variables:
+    - $PROJECT == "dgraph"
+  script:
+  - echo "<<<<<release-dgraph>>>>>"
+  - cp api/step-dgraph/target/dgraph-0.0.1-SNAPSHOT.jar   devops/dgraph
+  - cd devops/dgraph
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - docker build -t 172.16.77.53:30882/bp-dgraph:0.0.1 .
+  - docker push 172.16.77.53:30882/bp-dgraph:0.0.1
+#dgraph部署
+deploy-dgraph:
+  image: 172.16.77.53:30882/k8s:0.0.4
+  stage: deploy
+  only:
+    variables:
+    - $PROJECT == "dgraph"
+  script:
+  - echo "<<<<<deploy-dgraph>>>>>"
+  - cd devops/dgraph/
+  - kubectl apply -f ./yaml/
+  - kubectl delete -f ./yaml/
+  - kubectl apply -f ./yaml/
+
+#editor打包
+package-editor:
+  image: 172.16.77.53:30882/maven:0.0.2
+  stage: package
+  only:
+    variables:
+    - $PROJECT == "editor"
+  script:
+  - echo "<<<<<package-editor>>>>>"
+  - cd api/gxl-editor
+  - mvn clean install -Dmaven.test.skip=true
+  artifacts:
+    paths:
+    - api/gxl-editor/target/gxl-editor-0.0.1-SNAPSHOT.jar
+#editor生成镜像
+release-editor:
+  image: docker:stable-dind
+  stage: release
+  dependencies:
+  - package-editor
+  only:
+    variables:
+    - $PROJECT == "editor"
+  script:
+  - echo "<<<<<release-editor>>>>>"
+  - cp api/gxl-editor/target/gxl-editor-0.0.1-SNAPSHOT.jar   devops/editor
+  - cd devops/editor
+  - docker login -u admin -p admin123 172.16.77.53:30882
+  - docker build -t 172.16.77.53:30882/editor:0.0.1 .
+  - docker push 172.16.77.53:30882/editor:0.0.1
+#editor部署
+deploy-editor:
+  image: 172.16.77.53:30882/k8s:0.0.4
+  stage: deploy
+  only:
+    variables:
+    - $PROJECT == "editor"
+  script:
+  - echo "<<<<<deploy-editor>>>>>"
+  - cd devops/editor/
+  - kubectl apply -f ./yaml/
+  - kubectl delete -f ./yaml/
+  - kubectl apply -f ./yaml/
+
+  #aps打包
+package-aps:
+  image: 172.16.77.53:30882/maven:0.0.2
+  stage: package
+  only:
+    variables:
+    - $PROJECT == "aps"
+  script:
+  - echo "<<<<<package-aps>>>>>"
+  - cd spark/aps-spark
+  - mvn clean install -Dmaven.test.skip=true
+  artifacts:
+    paths:
+    - spark/aps-spark/target/aps-spark-0.0.1-SNAPSHOT-jar-with-dependencies.jar

@@ -1,8 +1,10 @@
-# centos7安装loki
+# centos7安装loki及promtail
 
 > 系统版本centos7.6 
 >
 > loki版本0.4.0
+>
+> promtail版本0.4.0
 
 ## 下载loki、promtail
 
@@ -16,13 +18,18 @@ wget https://github.com/grafana/loki/releases/download/v0.4.0/promtail-linux-amd
 > 解压并移动位置
 
 ```shell
+#loki
 mkdir /usr/local/loki
-mkdir /usr/local/promtail
 gunzip loki-linux-amd64.gz
-gunzip promtail-linux-amd64.gz
-chmod +x loki-linux-amd64 promtail-linux-amd64
-mv loki-linux-amd64 loki && mv promtail-linux-amd64 promtail
+chmod +x loki-linux-amd64
+mv loki-linux-amd64 loki
 mv loki /usr/local/loki
+
+#promt
+mkdir /usr/local/promtail
+gunzip promtail-linux-amd64.gz
+chmod +x promtail-linux-amd64
+mv promtail-linux-amd64 promtail
 mv promtail /usr/local/promtail
 ```
 
@@ -90,7 +97,7 @@ table_manager:
 
 ```
 
-## 配置promtail
+## 静态配置promtail
 
 ```shell
 cd /usr/local/promtail
@@ -109,6 +116,46 @@ clients:
 scrape_configs:
 - job_name: system
   static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: varlogs
+      __path__: /var/log/*
+```
+
+## 基于文件的服务发现配置promtail
+
+> 和静态配置promtail二选一即可
+
+```shell
+cd /usr/local/promtail/
+vim promtail-local-config.yaml
+#写入一下内容
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+- job_name: order
+  file_sd_configs:
+    - files:
+      - /usr/local/promtail/config/*.yaml
+      refresh_interval: 5s #更新的间隔 默认是5m
+      
+```
+
+```shell
+#创建存放配置的目录
+mkdir config
+vim ./config/ceshi.yaml
+#写入一下内容
   - targets:
       - localhost
     labels:
