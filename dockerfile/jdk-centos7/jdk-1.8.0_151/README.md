@@ -7,3 +7,4 @@
 ​        下载地址：[电梯直达](https://repo.huaweicloud.com/java/jdk/8u151-b12/jdk-8u151-linux-x64.tar.gz)
 
 ​        修改了时区及字符
+  构建后的镜像名为：dylan123/jdk-centos7:1.8.0_151
