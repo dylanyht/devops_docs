@@ -1,0 +1,29 @@
+#根据install-netdata-a文件修改的
+# http://sakananote2.blogspot.com/2019/07/ansible-netdata-on-gcp.html
+---
+- name: Install netdata and run service
+  hosts: netdata
+  become: True
+  tasks:
+    - name: downlaod netdata software
+      get_url:
+        url: https://my-netdata.io/kickstart-static64.sh
+        dest: /opt/
+    - name: install netdata
+      shell: bash /opt/kickstart-static64.sh --dont-wait
+
+    - name: clean yum cache
+      shell: yum clean all
+      args:
+        warn: no
+    - name: remove netdata software
+      shell: rm -rf /usr/opt/kickstart-static64.sh
+      args:
+        warn: no
+
+
+
+
+
+
+
