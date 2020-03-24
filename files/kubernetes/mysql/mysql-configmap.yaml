@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+data:
+  "self.cnf": |
+    [mysqld]
+    max_connections=10000
+    lower_case_table_names=1
+    sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES

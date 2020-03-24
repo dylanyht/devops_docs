@@ -1,0 +1,17 @@
+
+- name: netdata
+  hosts: netdata #目标主机
+  remote_user: root #执行任务的用户
+  vars:
+   username: bob   #新增的用户
+   password: 123   #密码
+  tasks:
+  - name: add user
+    user: name={{ username }} state=present
+    when: ansible_os_family == "RedHat"
+  - name: set password
+    shell: echo {{ password }} |passwd --stdin {{ username }}
+
+# 在playbook中调用变量的方式为{{ variable }}
+# when语句用来条件测试
+# ansible_os_family 是facts中内置的属性信息  ansible_os_family的信息可以使用ansible all -m setup | grep ansible_os_family查看

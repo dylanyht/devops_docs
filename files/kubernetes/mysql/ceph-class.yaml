@@ -1,0 +1,11 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: mysql-masks
+provisioner: ceph.com/cephfs
+parameters:
+    monitors: 172.16.77.53:6789
+    adminId: admin
+    adminSecretName: ceph-secret-admin-53 #此处名称要和集群中的ceph密码对应
+    adminSecretNamespace: "storage"
+    claimRoot: /volumes/kubernetes/masks/mysql-masks
