@@ -1,0 +1,15 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mysql
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true" #如果不将此sc设置为默认的话 这个可以注释掉
+parameters:
+  adminId: admin
+  adminSecretName: ceph-secret-admin-53
+  adminSecretNamespace: storage
+  claimRoot: /volumes/kubernetes/dylan/mysql
+  monitors: 172.16.77.53:6789
+provisioner: ceph.com/cephfs
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
