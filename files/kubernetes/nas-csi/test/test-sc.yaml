@@ -1,0 +1,14 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: test-sc
+mountOptions:
+- nolock,tcp,noresvport
+- vers=3
+parameters:
+  volumeAs: subpath
+  server: 1a9a349c55-xax3.cn-beijing.nas.aliyuncs.com:/test-1/
+  archiveOnDelete: "true"
+reclaimPolicy: Delete
+provisioner: nasplugin.csi.alibabacloud.com
+volumeBindingMode: Immediate
