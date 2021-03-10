@@ -2,6 +2,7 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: nfs-client-provisioner
+  namespace: nfs
 spec:
   replicas: 1
   strategy:
@@ -25,11 +26,11 @@ spec:
             - name: PROVISIONER_NAME
               value: fuseim.pri/ifs
             - name: NFS_SERVER
-              value: 172.16.7.134  # 替换为你的NFS服务器
+              value: 172.16.77.153  # 替换为你的NFS服务器
             - name: NFS_PATH
               value: /home/kubedata  # 替换为你的NFS文件夹
       volumes:
         - name: nfs-client-root
           nfs:
-            server: 172.16.7.134  # 替换为你的NFS服务器
+            server: 172.16.77.153  # 替换为你的NFS服务器
             path: /home/kubedata  # 替换为你的NFS文件夹
