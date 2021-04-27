@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana
+  namespace: grafana
+spec:
+#  storageClassName: managed-nfs-storage #如果storageclasses是默认的（有default标识）的就不需要指定 如果没有就需要指定storageclasses名字
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Mi

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: grafana
+  labels:
+    k8s-app: grafana
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: grafana
+  annotations:
+    prometheus.io/scrape: 'true'
+spec:
+  ports:
+    - name: http
+      nodePort: 43000
+      port: 80
+      protocol: TCP
+      targetPort: 3000
+  type: NodePort
+  selector:
+    k8s-app: grafana
