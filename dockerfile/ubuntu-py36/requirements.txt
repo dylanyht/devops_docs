@@ -1,5 +1,6 @@
-tensorflow==1.13.1
-Keras==2.1.6
-opencv-python
-Pillow==7.2.0
-h5py==2.10.0
+#此文件夹用于填写相关依赖包及版本
+# tensorflow==1.13.1
+# Keras==2.1.6
+# opencv-python
+# Pillow==7.2.0
+# h5py==2.10.0
