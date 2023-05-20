@@ -1,0 +1,69 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: es-local-01
+spec:
+  capacity:
+    storage: 20Gi
+  volumeMode: Filesystem            #定义是否格式化卷使用
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /data/k8s/es  # 77.52节点上的目录
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - 172.16.77.52
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: es-local-02
+spec:
+  capacity:
+    storage: 20Gi
+  volumeMode: Filesystem            #定义是否格式化卷使用
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /data/k8s/es  # 77.53节点上的目录
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - 172.16.77.53
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: es-local-03
+spec:
+  capacity:
+    storage: 20Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /data/k8s/es
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - 172.16.77.54
